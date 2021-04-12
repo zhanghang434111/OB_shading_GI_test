@@ -10,7 +10,6 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
     r = np.zeros((img_raw.shape),dtype=np.uint16)
     g = np.zeros((img_raw.shape),dtype=np.uint16)
     b = np.zeros((img_raw.shape),dtype=np.uint16)
-
     # BGGR
     # B G B G B
     # G R G R G
@@ -64,6 +63,9 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
 # mipi raw 转Bayer raw
 # 返回值：bayer raw image
 def mipiRaw_2_Bayer(filepath,raw_size = "5M",raw_deepth="raw10"):
+    # raw10
+    # 5个byte存储4个pixel,其中第5个byte分割成4个两位，分别补到前面四个pixel的低两位
+    # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2] --> P1[1:0] --> P2[1:0] --> P3[1:0] --> P4[1:0]
     if (raw_deepth == 'raw10'):
         size = os.path.getsize(filepath) #获得文件大小
         fo = open(filepath, 'rb+')
@@ -72,7 +74,7 @@ def mipiRaw_2_Bayer(filepath,raw_size = "5M",raw_deepth="raw10"):
             data = fo.read(1) #每次输出一个字节
             num = int.from_bytes(data, byteorder='big')
             a[i] = num
-        print(a)
+        print("mipi raw原始数据",a)
         '''
         p1 = (a[0] << 2) + (a[4] & 0x03)
         p2 = (a[1] << 2) + (a[4] & 0x0c)
@@ -81,15 +83,68 @@ def mipiRaw_2_Bayer(filepath,raw_size = "5M",raw_deepth="raw10"):
         '''
         b = []
         for c in range(size):
+        #for c in range(0, size, 5):
             if (c + 1) % 5 == 0:
                 if c == 0:
                     b.append(a[c])
                 continue
             else:
                 b.append(a[c])
-        print(b)
+            # b.append((a[c] << 2) + (a[c+4] & 0x03))
+            # b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
+            # b.append((a[c+2] << 2) + (a[c + 4] & 0x30))
+            # b.append((a[c+3] << 2) + (a[c + 4] & 0xc0))
+
+        print("转换为bayer raw数据：",b)
+        print(b[92500:93000])
         k = np.array(b)
-        print(k)
+        print("bayer raw数据转换为numpy数组：",k)
         m = k.reshape((1200, 1600))
-        print(m)
-        return m
+        print("bayer raw转置为对应尺寸图片数组：",m)
+        #np.savetxt = ("img.txt",m)
+
+    # raw8
+    # 单字节对齐
+    # P1[7:0] --> P2[7:0] --> P3[7:0] --> P4[7:0]
+    elif (raw_deepth == 'raw8'):
+        size = os.path.getsize(filepath)  # 获得文件大小
+        fo = open(filepath, 'rb+')
+        a = np.zeros(size, dtype=int)
+        for i in range(size):
+            data = fo.read(1)  # 每次输出一个字节
+            num = int.from_bytes(data, byteorder='big')
+            a[i] = num
+        print("mipi raw原始数据",a)
+        k = np.array(a)
+        print("bayer raw数据转换为numpy数组：",k)
+        m = k.reshape((1200, 1600))
+        print("bayer raw转置为对应尺寸图片数组：",m)
+
+    # raw12
+    # 3个byte存储2个pixel
+    # P1[11:4] --> P2[11:4] --> P2[3:0] --> P1[3:0]
+    elif (raw_deepth == 'raw12'):
+        size = os.path.getsize(filepath) #获得文件大小
+        fo = open(filepath, 'rb+')
+        a = np.zeros(size, dtype=int)
+        for i in range(size):
+            data = fo.read(1) #每次输出一个字节
+            num = int.from_bytes(data, byteorder='big')
+            a[i] = num
+        print("mipi raw原始数据",a)
+        '''
+        p1 = (a[0] << 4) + (a[2] & 0x0f)
+        p2 = (a[1] << 4) + (a[2] & 0xf0)
+        '''
+        b = []
+        for c in range(0,size,3):
+            b.append((a[c] << 4) + (a[c+2] & 0x0f))
+            b.append((a[c+1] << 4) + (a[c + 2] & 0xf0))
+
+        print("转换为bayer raw数据：",b)
+        k = np.array(b)
+        print("bayer raw数据转换为numpy数组：",k)
+        m = k.reshape((1200, 1600))
+        print("bayer raw转置为对应尺寸图片数组：",m)
+
+    return m

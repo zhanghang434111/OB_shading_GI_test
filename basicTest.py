@@ -8,56 +8,53 @@ import cv2
 from scipy import misc
 
 # ob test
-# 返回值：blocks mean
+# 返回值：blocks value mean
 def ob_test(img_raw,block_x,block_y):
     hei = img_raw.shape[0]
     wid = img_raw.shape[1]
-    channel = img_raw.shape[2]
+    #channel = img_raw.shape[2]
     OB_block_value = np.zeros((block_y, block_x), dtype=float)
-    #print("block-1", np.mean(img_raw[:hei // block_x, :wid // block_y, :]))
 
     # 划分 17 * 13 个 blocks,多余行和列放入中间block
     block_hei = hei // block_y
     block_wid = wid // block_x
     mid_block_hei = block_hei + hei % block_y
     mid_block_wid = block_wid + wid % block_x
-    print(block_hei, block_wid, mid_block_hei, mid_block_wid)
+    print("block高：",block_hei, "block宽：",block_wid, "中心block高：",mid_block_hei, "中心block宽：",mid_block_wid)
 
     for row in range(0,block_y):
         for col in range(0,block_x):
             if (col <block_y//2 & row < block_y//2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * col:block_wid * (col + 1), :])
+                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * col:block_wid * (col + 1)])
             elif (col < block_x//2 & row == block_y//2):
                     OB_block_value[row, col] = np.mean(
-                        img_raw[block_hei * row:block_hei * row + mid_block_hei, block_wid * col:block_wid * (col+1), :])
+                        img_raw[block_hei * row:block_hei * row + mid_block_hei, block_wid * col:block_wid * (col+1)])
             elif (col < block_x//2 & row > block_y//2):
                     OB_block_value[row, col] = np.mean(
-                        img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * col:block_wid * (col+1), :])
+                        img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * col:block_wid * (col+1)])
 
 
             elif (col == block_x//2 & row < block_y//2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * col:block_wid * col + mid_block_wid, :])
+                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * col:block_wid * col + mid_block_wid])
             elif (col == block_x//2 & row == block_y//2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * row:block_hei * row + mid_block_hei, block_wid * col:block_wid * col + mid_block_wid,
-                    :])
+                    img_raw[block_hei * row:block_hei * row + mid_block_hei, block_wid * col:block_wid * col + mid_block_wid])
             elif (col == block_x//2 & row > block_y//2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * col:block_wid * col + mid_block_wid,
-                    :])
+                    img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * col:block_wid * col + mid_block_wid])
 
 
             elif (col > block_x//2 & row < block_y//2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * (col-1) + mid_block_wid:block_wid * col + mid_block_wid, :])
+                    img_raw[block_hei * row:block_hei * (row + 1), block_wid * (col-1) + mid_block_wid:block_wid * col + mid_block_wid])
             elif (col > block_x // 2 & row == block_y // 2):
                 OB_block_value[row, col] = np.mean(
-                    img_raw[block_hei * row:block_hei * row + mid_block_hei,block_wid * (col - 1) + mid_block_wid:block_wid * col + mid_block_wid, :])
+                    img_raw[block_hei * row:block_hei * row + mid_block_hei,block_wid * (col - 1) + mid_block_wid:block_wid * col + mid_block_wid])
             elif (col > block_x//2 & row > block_y//2):
                     OB_block_value[row, col] = np.mean(
-                        img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * (col-1) + mid_block_wid:block_wid * col + mid_block_wid, :])
+                        img_raw[block_hei * (row-1) + mid_block_hei:block_hei * row + mid_block_hei, block_wid * (col-1) + mid_block_wid:block_wid * col + mid_block_wid])
     return OB_block_value
 
 #图片分通道
@@ -74,20 +71,10 @@ def raw_channle(img_raw,bayerpattern):
     # B G B G B G
     # G R G R G R
     if bayerpattern == "B":
-        # R_channle = np.zeros((img_raw.shape),dtype=np.uint16)
-        # Gr_channle = np.zeros((img_raw.shape),dtype=np.uint16)
-        # Gb_channle = np.zeros((img_raw.shape),dtype=np.uint16)
-        # B_channle = np.zeros((img_raw.shape),dtype=np.uint16)
-        #
-        # R_channle[1::2, 1::2,:] = img_raw[1::2, 1::2,:]
-        # Gr_channle[1::2, ::2,:] = img_raw[1::2, ::2,:]
-        # Gb_channle[::2, 1::2,:] = img_raw[::2, 1::2,:]
-        # B_channle[::2, ::2,:] = img_raw[::2, ::2,:]
-
-        R_channle = img_raw[1::2, 1::2, :]
-        Gr_channle = img_raw[1::2, ::2, :]
-        Gb_channle = img_raw[::2, 1::2, :]
-        B_channle = img_raw[::2, ::2, :]
+        R_channle = img_raw[1::2, 1::2]
+        Gr_channle = img_raw[1::2, ::2]
+        Gb_channle = img_raw[::2, 1::2]
+        B_channle = img_raw[::2, ::2]
 
     # RGGB
     # R G R G R
@@ -95,10 +82,10 @@ def raw_channle(img_raw,bayerpattern):
     # R G R G R
     # G B G B G
     if bayerpattern == "R":
-        B_channle = img_raw[1::2, 1::2, :]
-        Gb_channle = img_raw[1::2, ::2, :]
-        Gr_channle = img_raw[::2, 1::2, :]
-        R_channle = img_raw[::2, ::2, :]
+        B_channle = img_raw[1::2, 1::2]
+        Gb_channle = img_raw[1::2, ::2]
+        Gr_channle = img_raw[::2, 1::2]
+        R_channle = img_raw[::2, ::2]
 
     # GRBG
     # G R G R G
@@ -106,10 +93,10 @@ def raw_channle(img_raw,bayerpattern):
     # G R G R G
     # B G B G B
     if bayerpattern == "Gr":
-        Gb_channle = img_raw[1::2, 1::2, :]
-        B_channle = img_raw[1::2, ::2, :]
-        R_channle = img_raw[::2, 1::2, :]
-        Gr_channle = img_raw[::2, ::2, :]
+        Gb_channle = img_raw[1::2, 1::2]
+        B_channle = img_raw[1::2, ::2]
+        R_channle = img_raw[::2, 1::2]
+        Gr_channle = img_raw[::2, ::2]
 
     # GBRG
     # G B G B G
@@ -117,17 +104,12 @@ def raw_channle(img_raw,bayerpattern):
     # G B G B G
     # R G R G R
     if bayerpattern == "Gb":
-        R_channle = np.copy(img_raw)
-        Gr_channle = np.copy(img_raw)
-        Gb_channle = np.copy(img_raw)
-        B_channle = np.copy(img_raw)
+        Gr_channle = img_raw[1::2, 1::2]
+        R_channle = img_raw[1::2, ::2]
+        B_channle = img_raw[::2, 1::2]
+        Gb_channle = img_raw[::2, ::2]
 
-        Gr_channle = img_raw[1::2, 1::2, :]
-        R_channle = img_raw[1::2, ::2, :]
-        B_channle = img_raw[::2, 1::2, :]
-        Gb_channle = img_raw[::2, ::2, :]
-
-
+    print(B_channle)
     return R_channle, Gr_channle, Gb_channle, B_channle
 
 
@@ -157,11 +139,11 @@ def blockData2Excel(imgBlockData):
 
 # GI test
 # 返回值：blocks GI
-def GI_test(imgraw):
+def GI_test(imgraw,block_x,block_y):
     R, Gr, Gb, B = raw_channle(imgraw, "B")
-    GIdata = np.zeros((13,17), dtype=float)
-    Gr_data = ob_test(Gr,17,13)
-    Gb_data = ob_test(Gb, 17, 13)
+    GIdata = np.zeros((block_y,block_x), dtype=float)
+    Gr_data = ob_test(Gr,block_x,block_y)
+    Gb_data = ob_test(Gb, block_x, block_y)
     GIdata = Gr_data / Gb_data - 1
     return GIdata
 
