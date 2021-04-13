@@ -57,8 +57,9 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
         b[::2, 1::2, :] = img_raw[::2, 1::2]
         r[1::2, ::2, :] = img_raw[1::2, ::2]
 
-    im_conv = np.stack((r, g, b), axis=2).astype("uint8")
+    #im_conv = np.stack((r, g, b), axis=2).astype("uint8")
     #im_conv = np.array([r,g,b])
+    im_conv = r + g + b
     print(im_conv)
     return im_conv
 
@@ -69,32 +70,22 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
 # 返回值：bayer raw image
 def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="big"):
     size = os.path.getsize(filepath)  # 获得文件大小
-    if width == "2592":
-        img_wid = 2592
-    elif width == "1600":
-        img_wid = 1600
-    elif width == "3264":
-        img_wid = 3264
-
-    if height == "1944":
-        img_hei = 1944
-    elif height == "1200":
-        img_hei = 1200
-    elif height == "2448":
-        img_hei = 2448
+    img_wid = int(width)
+    img_hei = int(height)
 
     # raw10
     # 5个byte存储4个pixel,其中第5个byte分割成4个两位，分别补到前面四个pixel的低两位
     # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2] --> P1[1:0] --> P2[1:0] --> P3[1:0] --> P4[1:0]
     if (raw_deepth == 'raw10'):
-
+        #a = np.fromfile(filepath, dtype=np.uint16)
         fo = open(filepath, 'rb+')
-        a = np.zeros(size, dtype=int)
+        a = np.zeros(size, dtype=np.uint16)
         for i in range(size):
             data = fo.read(1) #每次输出一个字节
             num = int.from_bytes(data, byteorder=byteorder)
             a[i] = num
-        #print("mipi raw原始数据",a)
+
+        print("mipi raw原始数据",a)
         '''
         p1 = (a[0] << 2) + (a[4] & 0x03)
         p2 = (a[1] << 2) + (a[4] & 0x0c)
