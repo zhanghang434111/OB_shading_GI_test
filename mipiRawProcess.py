@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pylab as plt
-import matplotlib.image as img
 import os
 
 
@@ -16,10 +14,10 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
     # B G B G B
     # G R G R G
     if (bayerpattern == "B"):
-        r[1::2, 1::2, :] = img_raw[1::2, 1::2]
-        b[::2, ::2, :] = img_raw[1::2, ::2]
-        g[::2, 1::2, :] = img_raw[::2, 1::2]
-        g[1::2, ::2, :] = img_raw[1::2, ::2]
+        r[1::2, 1::2] = img_raw[1::2, 1::2]
+        b[::2, ::2] = img_raw[1::2, ::2]
+        g[::2, 1::2] = img_raw[::2, 1::2]
+        g[1::2, ::2] = img_raw[1::2, ::2]
 
     # RGGB
     # R G R G R
@@ -27,10 +25,15 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
     # R G R G R
     # G B G B G
     elif (bayerpattern == "R"):
-        b[1::2, 1::2, :] = img_raw[1::2, 1::2]
-        r[::2, ::2, :] = img_raw[::2, ::2]
-        g[::2, 1::2, :] = img_raw[::2, 1::2]
-        g[1::2, ::2, :] = img_raw[1::2, ::2]
+        # b[1::2, 1::2, :] = img_raw[1::2, 1::2]
+        # r[::2, ::2, :] = img_raw[::2, ::2]
+        # g[::2, 1::2, :] = img_raw[::2, 1::2]
+        # g[1::2, ::2, :] = img_raw[1::2, ::2]
+
+        b[1::2, 1::2] = img_raw[1::2, 1::2]
+        r[::2, ::2] = img_raw[::2, ::2]
+        g[::2, 1::2] = img_raw[::2, 1::2]
+        g[1::2, ::2] = img_raw[1::2, ::2]
 
     # GRBG
     # G R G R G
@@ -55,26 +58,43 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
         r[1::2, ::2, :] = img_raw[1::2, ::2]
 
     im_conv = np.stack((r, g, b), axis=2).astype("uint8")
+    #im_conv = np.array([r,g,b])
     print(im_conv)
     return im_conv
 
     #img.imsave(r'C:\Users\herman\Desktop\py_raw_test\xxxx.bmp', im_conv)
 
+
 # mipi raw 转Bayer raw
 # 返回值：bayer raw image
-def mipiRaw_2_Bayer(filepath,raw_size = "5M",raw_deepth="raw10"):
+def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="big"):
+    size = os.path.getsize(filepath)  # 获得文件大小
+    if width == "2592":
+        img_wid = 2592
+    elif width == "1600":
+        img_wid = 1600
+    elif width == "3264":
+        img_wid = 3264
+
+    if height == "1944":
+        img_hei = 1944
+    elif height == "1200":
+        img_hei = 1200
+    elif height == "2448":
+        img_hei = 2448
+
     # raw10
     # 5个byte存储4个pixel,其中第5个byte分割成4个两位，分别补到前面四个pixel的低两位
     # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2] --> P1[1:0] --> P2[1:0] --> P3[1:0] --> P4[1:0]
     if (raw_deepth == 'raw10'):
-        size = os.path.getsize(filepath) #获得文件大小
+
         fo = open(filepath, 'rb+')
         a = np.zeros(size, dtype=int)
         for i in range(size):
             data = fo.read(1) #每次输出一个字节
-            num = int.from_bytes(data, byteorder='big')
+            num = int.from_bytes(data, byteorder=byteorder)
             a[i] = num
-        print("mipi raw原始数据",a)
+        #print("mipi raw原始数据",a)
         '''
         p1 = (a[0] << 2) + (a[4] & 0x03)
         p2 = (a[1] << 2) + (a[4] & 0x0c)
@@ -82,24 +102,29 @@ def mipiRaw_2_Bayer(filepath,raw_size = "5M",raw_deepth="raw10"):
         p4 = (a[3] << 2) + (a[4] & 0xc0)
         '''
         b = []
-        for c in range(size):
-        #for c in range(0, size, 5):
-            if (c + 1) % 5 == 0:
-                if c == 0:
-                    b.append(a[c])
-                continue
-            else:
-                b.append(a[c])
-            # b.append((a[c] << 2) + (a[c+4] & 0x03))
-            # b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
-            # b.append((a[c+2] << 2) + (a[c + 4] & 0x30))
-            # b.append((a[c+3] << 2) + (a[c + 4] & 0xc0))
+        #for c in range(size):
+        for c in range(0, size, 5):
+            # if (c + 1) % 5 == 0:
+            #     if c == 0:
+            #         b.append(a[c])
+            #     continue
+            # else:
+            #     b.append(a[c])
+            b.append((a[c] << 2) + (a[c+4] & 0x03))
+            b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
+            b.append((a[c+2] << 2) + (a[c+4] & 0x30))
+            b.append((a[c+3] << 2) + (a[c+4] & 0xc0))
+        # print(a[0],a[1],a[2],a[3],a[4])
+        # print((a[0] << 2) + (a[4] & 0x03), (a[1] << 2) + (a[4] & 0x0c), (a[2] << 2) + (a[4] & 0x30), (a[3] << 2) + (a[4] & 0xc0))
+        # print(a[5], a[6], a[7], a[8], a[9])
+        # print((a[5] << 2) + (a[9] & 0x03), (a[6] << 2) + (a[9] & 0x0c), (a[7] << 2) + (a[9] & 0x30),
+        #       (a[8] << 2) + (a[9] & 0xc0))
+        #print("转换为bayer raw数据：",b)
+        #print(b[92500:93000])
 
-        print("转换为bayer raw数据：",b)
-        print(b[92500:93000])
         k = np.array(b)
         print("bayer raw数据转换为numpy数组：",k)
-        m = k.reshape((1200, 1600))
+        m = k.reshape((img_hei, img_wid))
         print("bayer raw转置为对应尺寸图片数组：",m)
         #np.savetxt = ("img.txt",m)
 

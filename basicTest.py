@@ -1,11 +1,9 @@
 import numpy as np
-import matplotlib.pylab as plt
-import matplotlib.image as img
 import pandas as pd
 import scipy.misc
 import sys
 import cv2
-from scipy import misc
+
 
 # ob test
 # 返回值：blocks value mean
@@ -60,10 +58,10 @@ def ob_test(img_raw,block_x,block_y):
 #图片分通道
 # 返回值：R、Gr、Gb、B四通道值，对应其它三个通道置0
 def raw_channle(img_raw,bayerpattern):
-    R_channle = np.copy(img_raw)
-    Gr_channle = np.copy(img_raw)
-    Gb_channle = np.copy(img_raw)
-    B_channle = np.copy(img_raw)
+    R_channle = np.zeros((img_raw.shape),dtype=np.uint16)
+    Gr_channle = np.zeros((img_raw.shape),dtype=np.uint16)
+    Gb_channle = np.zeros((img_raw.shape),dtype=np.uint16)
+    B_channle = np.zeros((img_raw.shape),dtype=np.uint16)
 
     # BGGR
     # B G B G B G
@@ -71,10 +69,10 @@ def raw_channle(img_raw,bayerpattern):
     # B G B G B G
     # G R G R G R
     if bayerpattern == "B":
-        R_channle = img_raw[1::2, 1::2]
-        Gr_channle = img_raw[1::2, ::2]
-        Gb_channle = img_raw[::2, 1::2]
-        B_channle = img_raw[::2, ::2]
+        R_channle[1::2, 1::2] = img_raw[1::2, 1::2]
+        Gr_channle[1::2, ::2] = img_raw[1::2, ::2]
+        Gb_channle[::2, 1::2] = img_raw[::2, 1::2]
+        B_channle[::2, ::2] = img_raw[::2, ::2]
 
     # RGGB
     # R G R G R
@@ -82,10 +80,10 @@ def raw_channle(img_raw,bayerpattern):
     # R G R G R
     # G B G B G
     if bayerpattern == "R":
-        B_channle = img_raw[1::2, 1::2]
-        Gb_channle = img_raw[1::2, ::2]
-        Gr_channle = img_raw[::2, 1::2]
-        R_channle = img_raw[::2, ::2]
+        B_channle[1::2, 1::2] = img_raw[1::2, 1::2]
+        Gb_channle[1::2, ::2] = img_raw[1::2, ::2]
+        Gr_channle[::2, 1::2] = img_raw[::2, 1::2]
+        R_channle[::2, ::2] = img_raw[::2, ::2]
 
     # GRBG
     # G R G R G
@@ -110,6 +108,7 @@ def raw_channle(img_raw,bayerpattern):
         Gb_channle = img_raw[::2, ::2]
 
     print(B_channle)
+    print(R_channle)
     return R_channle, Gr_channle, Gb_channle, B_channle
 
 
@@ -140,7 +139,7 @@ def blockData2Excel(imgBlockData):
 # GI test
 # 返回值：blocks GI
 def GI_test(imgraw,block_x,block_y):
-    R, Gr, Gb, B = raw_channle(imgraw, "B")
+    R, Gr, Gb, B = raw_channle(imgraw, "R")
     GIdata = np.zeros((block_y,block_x), dtype=float)
     Gr_data = ob_test(Gr,block_x,block_y)
     Gb_data = ob_test(Gb, block_x, block_y)
