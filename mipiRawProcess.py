@@ -1,10 +1,32 @@
 import numpy as np
 import os
+from PIL import Image
+from skimage import img_as_ubyte
+import cv2
 
+def uint16to8(bands, lower_percent=0.001, higher_percent=99.999):
+    out = np.zeros_like(bands,dtype = np.uint8)
+    n = bands.shape[0]
+    for i in range(n):
+        a = 0 # np.min(band)
+        b = 255 # np.max(band)
+        c = np.percentile(bands[i, :], lower_percent)
+        d = np.percentile(bands[i, :], higher_percent)
+        t = a + (bands[i, :] - c) * (b - a) / (d - c)
+        t[t<a] = a
+        t[t>b] = b
+        out[i, :] = t
+    return out
 
 # bayer raw 转 BMP
 # 返回值：BMP图像数组
-def bayerRaw2bmp(img_raw,bayerpattern = "B"):
+def bayerRaw2bmp(img_raw,bayerpattern = "R"):
+    #img_new = np.uint8(img_raw)
+    #img_new = img_as_ubyte(img_raw)
+    #img_new = np.asarray(img_raw, dtype=np.uint8)
+    #img_new = cv2.convertScaleAbs(img_raw)         #不是线性压缩
+    #img_new = (img_raw * 255).astype(np.uint8)
+    img_new = uint16to8(img_raw)
     r = np.zeros((img_raw.shape),dtype=np.uint8)
     g = np.zeros((img_raw.shape),dtype=np.uint8)
     b = np.zeros((img_raw.shape),dtype=np.uint8)
@@ -15,7 +37,7 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
     # G R G R G
     if (bayerpattern == "B"):
         r[1::2, 1::2] = img_raw[1::2, 1::2]
-        b[::2, ::2] = img_raw[1::2, ::2]
+        b[::2, ::2] = img_raw[::2, ::2]
         g[::2, 1::2] = img_raw[::2, 1::2]
         g[1::2, ::2] = img_raw[1::2, ::2]
 
@@ -25,37 +47,51 @@ def bayerRaw2bmp(img_raw,bayerpattern = "B"):
     # R G R G R
     # G B G B G
     elif (bayerpattern == "R"):
-        # b[1::2, 1::2, :] = img_raw[1::2, 1::2]
-        # r[::2, ::2, :] = img_raw[::2, ::2]
-        # g[::2, 1::2, :] = img_raw[::2, 1::2]
-        # g[1::2, ::2, :] = img_raw[1::2, ::2]
 
-        b[1::2, 1::2] = img_raw[1::2, 1::2]
-        r[::2, ::2] = img_raw[::2, ::2]
-        g[::2, 1::2] = img_raw[::2, 1::2]
-        g[1::2, ::2] = img_raw[1::2, ::2]
+        # for ver in range(img_raw.shape[0]):
+        #     for hor in range(img_raw.shape[1]):
+        #         if ((0 == np.mod(ver, 2)) & (0 == np.mod(hor, 2))):
+        #             b[ver, hor] = img_raw[ver, hor]
+        #             # R 通道
+        #         elif ((1 == np.mod(ver, 2)) & (1 == np.mod(hor, 2))):
+        #             r[ver, hor] = img_raw[ver, hor]
+        #             # B 通道
+        #         else:
+        #             g[ver, hor] = img_raw[ver, hor]
+        #             # G 通道
+
+        # b[1::2, 1::2] = img_raw[1::2, 1::2]
+        # r[::2, ::2] = img_raw[::2, ::2]
+        # g[::2, 1::2] = img_raw[::2, 1::2]
+        # g[1::2, ::2] = img_raw[1::2, ::2]
+        r[1::2, 1::2] = img_new[1::2, 1::2]
+        b[::2, ::2] = img_new[::2, ::2]
+        g[::2, 1::2] = img_new[::2, 1::2]
+        g[1::2, ::2] = img_new[1::2, ::2]
 
     # GRBG
     # G R G R G
     # B G B G B
     # G R G R G
     # B G B G B
+    ##########   待验证
     elif (bayerpattern == "Gr"):
-        g[1::2, 1::2, :] = img_raw[1::2, 1::2]
-        g[::2, ::2, :] = img_raw[::2, ::2]
-        r[::2, 1::2, :] = img_raw[::2, 1::2]
-        b[1::2, ::2, :] = img_raw[1::2, ::2]
+        g[1::2, 1::2] = img_raw[1::2, 1::2]
+        g[::2, ::2] = img_raw[::2, ::2]
+        r[::2, 1::2] = img_raw[::2, 1::2]
+        b[1::2, ::2] = img_raw[1::2, ::2]
 
     # GBRG
     # G B G B G
     # R G R G R
     # G B G B G
     # R G R G R
+    ##########   待验证
     elif (bayerpattern == "Gb"):
-        g[1::2, 1::2, :] = img_raw[1::2, 1::2]
-        g[::2, ::2, :] = img_raw[::2, ::2]
-        b[::2, 1::2, :] = img_raw[::2, 1::2]
-        r[1::2, ::2, :] = img_raw[1::2, ::2]
+        g[1::2, 1::2] = img_raw[1::2, 1::2]
+        g[::2, ::2] = img_raw[::2, ::2]
+        b[::2, 1::2] = img_raw[::2, 1::2]
+        r[1::2, ::2] = img_raw[1::2, ::2]
 
     im_conv = np.stack((r, g, b), axis=2).astype("uint8")
     #im_conv = np.array([r,g,b])
@@ -73,51 +109,58 @@ def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",b
     img_wid = int(width)
     img_hei = int(height)
     print(size)
+
     # raw10
     # 5个byte存储4个pixel,其中第5个byte分割成4个两位，分别补到前面四个pixel的低两位
     # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2] --> P1[1:0] --> P2[1:0] --> P3[1:0] --> P4[1:0]
     if (raw_deepth == 'raw10'):
-        #a = np.fromfile(filepath, dtype=np.uint16)
         # fo = open(filepath, 'rb+')
         # a = np.zeros(size, dtype=np.uint16)
         # for i in range(size):
         #     data = fo.read(1) #每次输出一个字节
         #     num = int.from_bytes(data, byteorder=byteorder)
         #     a[i] = num
-
         a = np.fromfile(filepath,dtype='u1')   # u1 = uint8 ; u2 = uint16 ;
         print("mipi raw原始数据",a)
-        '''
-        p1 = (a[0] << 2) + (a[4] & 0x03)
-        p2 = (a[1] << 2) + (a[4] & 0x0c)
-        p3 = (a[2] << 2) + (a[4] & 0x30)
-        p4 = (a[3] << 2) + (a[4] & 0xc0)
-        
-        p1 =( (b4>>6) & 0x3 ) + (b0 >>2));
-        p2 =( (b4>>4) & 0x3 ) + (b1 >>2));
-        p3 =( (b4>>2) & 0x3 ) + (b2 >>2));
-        p4 =(  b4     & 0x3 ) + (b3 >>2));
-        '''
         # b = np.array(a)
-        b = np.zeros(shape=img_hei*img_wid,dtype=np.uint16)
-        print(b.shape)
-        #for c in range(size):
-        for c in range(0, size-4, 5):
+        #b = np.zeros(shape=img_hei*img_wid,dtype=np.uint16)
+        b = []
+        for c in range(0, size, 5):
+            b.append((a[c] << 2) + (a[c+4] & 0x03))
+            b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
+            b.append((a[c+2] << 2) + (a[c+4] & 0x30))
+            b.append((a[c+3] << 2) + (a[c+4] & 0xc0))
 
-            b[c] = ((a[c] << 2) + (a[c+4] & 0x03))
-            b[c+1] = ((a[c+1] << 2) + (a[c+4] & 0x0c))
-            b[c+2] = ((a[c+2] << 2) + (a[c+4] & 0x30))
-            b[c+3] = ((a[c+3] << 2) + (a[c+4] & 0xc0))
+        # for c in range(size):
+        #     if (c + 1) % 5 == 0:
+        #         continue
+        #     else:
+        #         b.append(a[c])
+
+            # b[c] = ((a[c] << 2) + (a[c+4] & 0x03))
+            # b[c+1] = ((a[c+1] << 2) + (a[c+4] & 0x0c))
+            # b[c+2] = ((a[c+2] << 2) + (a[c+4] & 0x30))
+            # b[c+3] = ((a[c+3] << 2) + (a[c+4] & 0xc0))
 
             # b[c] = a[c] + ((a[c + 4] & 0xc0)) << 2
             # b[c + 1] = a[c+1] + ((a[c + 4] & 0x30)) << 2
             # b[c + 2] = a[c+2] + ((a[c + 4] & 0x0c)) << 2
             # b[c + 3] = a[c+3] + ((a[c + 4] & 0x03)) << 2
+            '''
+            p1 = (a[0] << 2) + (a[4] & 0x03)
+            p2 = (a[1] << 2) + (a[4] & 0x0c)
+            p3 = (a[2] << 2) + (a[4] & 0x30)
+            p4 = (a[3] << 2) + (a[4] & 0xc0)
+            
+            p1 =( (b4>>6) & 0x3 ) + (b0 >>2))
+            p2 =( (b4>>4) & 0x3 ) + (b1 >>2))
+            p3 =( (b4>>2) & 0x3 ) + (b2 >>2))
+            p4 =(  b4     & 0x3 ) + (b3 >>2))
+            '''
 
-        #print(b[3],b[4],b[5])
-        # k = b[:(img_hei*img_wid)]
-        # print("bayer raw数据转换为numpy数组：",k)
-        m = b.reshape((img_hei, img_wid))
+        k = np.array(b)
+        print("bayer raw数据转换为numpy数组：",k)
+        m = k.reshape(img_hei, img_wid)
         print("bayer raw转置为对应尺寸图片数组：",m)
 
 

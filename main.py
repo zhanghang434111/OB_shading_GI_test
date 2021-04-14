@@ -20,7 +20,7 @@ block_width = int(input("区域划分,横坐标block数："))
 block_height = int(input("区域划分,纵坐标block数："))
 
 #print(bt.GI_test(bayer_raw,block_width,block_height))
-#bt.blockData2Excel(bt.intensity_test(bayer_raw, block_width, block_height))
+bt.blockData2Excel(bt.intensity_test(bayer_raw, block_width, block_height))
 
 
 
