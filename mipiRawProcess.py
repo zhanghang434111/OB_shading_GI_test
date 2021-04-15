@@ -4,6 +4,13 @@ from PIL import Image
 from skimage import img_as_ubyte
 import cv2
 
+# input
+#
+def read_img():
+    filepath = "asd"
+
+    return 0
+
 
 # 用于将raw图 16位转位8位，保存为bmp用作预览
 # bug问题：高亮条带
