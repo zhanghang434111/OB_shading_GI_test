@@ -11,7 +11,7 @@ def intensity_test(img_raw,block_x,block_y):
     hei = img_raw.shape[0]
     wid = img_raw.shape[1]
     #channel = img_raw.shape[2]
-    OB_block_value = np.zeros((block_y, block_x), dtype=float)
+    OB_block_value = np.zeros((block_y, block_x), dtype=np.uint16)
 
     # 划分 17 * 13 个 blocks,多余行和列放入中间block
     block_hei = hei // block_y
@@ -20,8 +20,8 @@ def intensity_test(img_raw,block_x,block_y):
     mid_block_wid = block_wid + wid % block_x
     print("block高：",block_hei, "block宽：",block_wid, "中心block高：",mid_block_hei, "中心block宽：",mid_block_wid)
     #np.set_printoptions(suppress=True)
-    for row in range(0,block_y):
-        for col in range(0,block_x):
+    for row in range(block_y):
+        for col in range(block_x):
             if (col <block_y//2 & row < block_y//2):
                 OB_block_value[row, col] = np.mean(
                     img_raw[block_hei * row:block_hei * (row + 1), block_wid * col:block_wid * (col + 1)])
@@ -69,6 +69,10 @@ def raw_channle(img_raw,bayerpattern):
     # B G B G B G
     # G R G R G R
     if bayerpattern == "B":
+        # R_channle[1::2, 1::2] = img_raw[1::2, 1::2]
+        # Gr_channle[1::2, ::2] = img_raw[1::2, ::2]
+        # Gb_channle[::2, 1::2] = img_raw[::2, 1::2]
+        # B_channle[::2, ::2] = img_raw[::2, ::2]
         R_channle[1::2, 1::2] = img_raw[1::2, 1::2]
         Gr_channle[1::2, ::2] = img_raw[1::2, ::2]
         Gb_channle[::2, 1::2] = img_raw[::2, 1::2]

@@ -4,6 +4,9 @@ from PIL import Image
 from skimage import img_as_ubyte
 import cv2
 
+
+# 用于将raw图 16位转位8位，保存为bmp用作预览
+# 待优化问题：高亮条带
 def uint16to8(bands, lower_percent=0.001, higher_percent=99.999):
     out = np.zeros_like(bands,dtype = np.uint8)
     n = bands.shape[0]
@@ -34,32 +37,17 @@ def bayerRaw2bmp(img_raw,bayerpattern = "R"):
     # B G B G B
     # G R G R G
     # B G B G B
-    # G R G R G
     if (bayerpattern == "B"):
-        r[1::2, 1::2] = img_raw[1::2, 1::2]
-        b[::2, ::2] = img_raw[::2, ::2]
-        g[::2, 1::2] = img_raw[::2, 1::2]
-        g[1::2, ::2] = img_raw[1::2, ::2]
+        r[1::2, 1::2] = img_new[1::2, 1::2]
+        b[::2, ::2] = img_new[::2, ::2]
+        g[::2, 1::2] = img_new[::2, 1::2]
+        g[1::2, ::2] = img_new[1::2, ::2]
 
     # RGGB
     # R G R G R
     # G B G B G
     # R G R G R
-    # G B G B G
     elif (bayerpattern == "R"):
-
-        # for ver in range(img_raw.shape[0]):
-        #     for hor in range(img_raw.shape[1]):
-        #         if ((0 == np.mod(ver, 2)) & (0 == np.mod(hor, 2))):
-        #             b[ver, hor] = img_raw[ver, hor]
-        #             # R 通道
-        #         elif ((1 == np.mod(ver, 2)) & (1 == np.mod(hor, 2))):
-        #             r[ver, hor] = img_raw[ver, hor]
-        #             # B 通道
-        #         else:
-        #             g[ver, hor] = img_raw[ver, hor]
-        #             # G 通道
-
         # b[1::2, 1::2] = img_raw[1::2, 1::2]
         # r[::2, ::2] = img_raw[::2, ::2]
         # g[::2, 1::2] = img_raw[::2, 1::2]
@@ -73,7 +61,6 @@ def bayerRaw2bmp(img_raw,bayerpattern = "R"):
     # G R G R G
     # B G B G B
     # G R G R G
-    # B G B G B
     ##########   待验证
     elif (bayerpattern == "Gr"):
         g[1::2, 1::2] = img_raw[1::2, 1::2]
@@ -85,7 +72,6 @@ def bayerRaw2bmp(img_raw,bayerpattern = "R"):
     # G B G B G
     # R G R G R
     # G B G B G
-    # R G R G R
     ##########   待验证
     elif (bayerpattern == "Gb"):
         g[1::2, 1::2] = img_raw[1::2, 1::2]
@@ -96,10 +82,8 @@ def bayerRaw2bmp(img_raw,bayerpattern = "R"):
     im_conv = np.stack((r, g, b), axis=2).astype("uint8")
     #im_conv = np.array([r,g,b])
     #im_conv = r + g + b
-    print(im_conv)
+    #print(im_conv)
     return im_conv
-
-    #img.imsave(r'C:\Users\herman\Desktop\py_raw_test\xxxx.bmp', im_conv)
 
 
 # mipi raw 转Bayer raw
@@ -122,14 +106,20 @@ def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",b
         #     a[i] = num
         a = np.fromfile(filepath,dtype='u1')   # u1 = uint8 ; u2 = uint16 ;
         print("mipi raw原始数据",a)
+        np.savetxt('bayer.txt',a)
         # b = np.array(a)
         #b = np.zeros(shape=img_hei*img_wid,dtype=np.uint16)
         b = []
         for c in range(0, size, 5):
-            b.append((a[c] << 2) + (a[c+4] & 0x03))
-            b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
-            b.append((a[c+2] << 2) + (a[c+4] & 0x30))
-            b.append((a[c+3] << 2) + (a[c+4] & 0xc0))
+            # b.append((a[c] << 2) + (a[c+4] & 0x03))
+            # b.append((a[c+1] << 2) + (a[c+4] & 0x0c))
+            # b.append((a[c+2] << 2) + (a[c+4] & 0x30))
+            # b.append((a[c+3] << 2) + (a[c+4] & 0xc0))
+
+            b.append((a[c]<< 2) + ((a[c + 4] >> 0) & 0x03))
+            b.append((a[c + 1]<< 2) + ((a[c + 4] >> 2) & 0x0c))
+            b.append((a[c + 2]<< 2) + ((a[c + 4] >> 4) & 0x30))
+            b.append((a[c + 3]<< 2) + ((a[c + 4] >> 6) & 0xc0))
 
         # for c in range(size):
         #     if (c + 1) % 5 == 0:
@@ -137,31 +127,12 @@ def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",b
         #     else:
         #         b.append(a[c])
 
-            # b[c] = ((a[c] << 2) + (a[c+4] & 0x03))
-            # b[c+1] = ((a[c+1] << 2) + (a[c+4] & 0x0c))
-            # b[c+2] = ((a[c+2] << 2) + (a[c+4] & 0x30))
-            # b[c+3] = ((a[c+3] << 2) + (a[c+4] & 0xc0))
-
-            # b[c] = a[c] + ((a[c + 4] & 0xc0)) << 2
-            # b[c + 1] = a[c+1] + ((a[c + 4] & 0x30)) << 2
-            # b[c + 2] = a[c+2] + ((a[c + 4] & 0x0c)) << 2
-            # b[c + 3] = a[c+3] + ((a[c + 4] & 0x03)) << 2
-            '''
-            p1 = (a[0] << 2) + (a[4] & 0x03)
-            p2 = (a[1] << 2) + (a[4] & 0x0c)
-            p3 = (a[2] << 2) + (a[4] & 0x30)
-            p4 = (a[3] << 2) + (a[4] & 0xc0)
-            
-            p1 =( (b4>>6) & 0x3 ) + (b0 >>2))
-            p2 =( (b4>>4) & 0x3 ) + (b1 >>2))
-            p3 =( (b4>>2) & 0x3 ) + (b2 >>2))
-            p4 =(  b4     & 0x3 ) + (b3 >>2))
-            '''
 
         k = np.array(b)
         print("bayer raw数据转换为numpy数组：",k)
         m = k.reshape(img_hei, img_wid)
         print("bayer raw转置为对应尺寸图片数组：",m)
+        #np.savetxt('bayer.txt',m)
 
 
     # raw8
