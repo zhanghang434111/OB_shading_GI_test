@@ -169,3 +169,62 @@ def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",b
         #print("bayer raw转置为对应尺寸图片数组：",m)
 
     return m
+
+
+# dothin raw 转 Bayer raw
+# 返回值：bayer raw image
+def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="big"):
+    size = os.path.getsize(filepath)  # 获得文件大小
+    img_wid = int(width)
+    img_hei = int(height)
+    print(size)
+
+    # raw10
+    # 2个byte存储1个pixel
+    # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2]
+    if (raw_deepth == 'raw10'):
+
+        a = np.fromfile(filepath,dtype='u2')   # u1 = uint8 ; u2 = uint16 ;
+        np.savetxt("raw.txt",a)
+        print(a)
+
+        # b = []
+        # for c in range(0, size, 5):
+        #     b.append((a[c]<< 2) + ((a[c + 4] >> 0) & 0x03))
+        #     b.append((a[c + 1]<< 2) + ((a[c + 4] >> 2) & 0x0c))
+        #     b.append((a[c + 2]<< 2) + ((a[c + 4] >> 4) & 0x30))
+        #     b.append((a[c + 3]<< 2) + ((a[c + 4] >> 6) & 0xc0))
+        # k = np.array(b)
+        k = np.array(a)
+        m = k.reshape(img_hei, img_wid)
+        print(m)
+
+
+
+
+    # raw8
+    # 单字节对齐
+    # P1[7:0] --> P2[7:0] --> P3[7:0] --> P4[7:0]
+    elif (raw_deepth == 'raw8'):
+        a = np.fromfile(filepath,dtype='u1')   # u1 = uint8 ; u2 = uint16 ;
+        print(a)
+        k = np.array(a)
+        m = k.reshape((img_hei, img_wid))
+
+
+    # raw12
+    # 3个byte存储2个pixel
+    # P1[11:4] --> P2[11:4] --> P2[3:0] --> P1[3:0]
+    elif (raw_deepth == 'raw12'):
+        a = np.fromfile(filepath,dtype='u1')   # u1 = uint8 ; u2 = uint16 ;
+
+        b = []
+        for c in range(0,size,3):
+            b.append((a[c] << 4) + (a[c+2] & 0x0f))
+            b.append((a[c+1] << 4) + ((a[c+2] >> 4) & 0x0f))
+
+        k = np.array(b)
+        m = k.reshape((img_hei, img_wid))
+
+    return m
+

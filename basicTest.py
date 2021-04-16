@@ -161,6 +161,7 @@ def GI_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
 # OB & shading test
 # 返回值 mean,R,Gr,Gb,B
 # 返回值 0
+# add WB test
 def OB_shading_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
     R, Gr, Gb, B = get_raw_channle(imgraw, bayerpattern)
     if bayerpattern == "R":
@@ -188,26 +189,36 @@ def OB_shading_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
     B_data = intensity_test(B_new, int(block_x), int(block_y))
     Gr_data = intensity_test(Gr_new, int(block_x), int(block_y))
     Gb_data = intensity_test(Gb_new, int(block_x), int(block_y))
+    RG_data = (R_data / Gr_data)
+    BG_data = (B_data / Gr_data)
     mean_data = intensity_test(imgraw, int(block_x), int(block_y))
+
+    RG_mean = np.mean(RG_data)
+    BG_mean = np.mean(BG_data)
 
     df_meam = pd.DataFrame(mean_data)
     df_R = pd.DataFrame(R_data)
     df_Gr = pd.DataFrame(Gr_data)
     df_Gb = pd.DataFrame(Gb_data)
     df_B = pd.DataFrame(B_data)
+    df_RG = pd.DataFrame(RG_data)
+    df_BG = pd.DataFrame(BG_data)
 
     # with pd.ExcelWriter('test.xlsx') as writer: # 一个excel写入多页数据
     #     dataFrame.to_excel(writer, sheet_name='page1', float_format='%.6f')
-    writer = pd.ExcelWriter('test.xlsx')  # 写入Excel文件
+    writer = pd.ExcelWriter('block_value.xlsx')  # 写入Excel文件
     df_meam.to_excel(writer, "mean", float_format='%.6f')  # ‘page_1’是写入excel的sheet名
     df_R.to_excel(writer, "R", float_format='%.6f')
     df_Gr.to_excel(writer, "Gr", float_format='%.6f')
     df_Gb.to_excel(writer, "Gb", float_format='%.6f')
     df_B.to_excel(writer, "B", float_format='%.6f')
+    df_RG.to_excel(writer, "R_G", float_format='%.6f')
+    df_BG.to_excel(writer, "B_G", float_format='%.6f')
     writer.save()
 
     #return mean_data,R_data,B_data,Gr_data,Gb_data
     return 0
+
 
 
 
