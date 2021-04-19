@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import rawProcess as rp
+import matplotlib.image as img
+import matplotlib.pylab as plt
 import scipy.misc
 import sys
 import cv2
@@ -201,6 +204,7 @@ def OB_shading_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
     df_Gr = pd.DataFrame(Gr_data)
     df_Gb = pd.DataFrame(Gb_data)
     df_B = pd.DataFrame(B_data)
+
     df_RG = pd.DataFrame(RG_data)
     df_BG = pd.DataFrame(BG_data)
 
@@ -218,6 +222,51 @@ def OB_shading_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
 
     #return mean_data,R_data,B_data,Gr_data,Gb_data
     return 0
+
+
+
+# 单坏点测试
+# 返回值：单坏点数量，单坏点坐标
+def single_badpixel_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
+    threshold = 256
+    if imgraw.dtype == 'uint8':
+        threshold = 64
+    location = []
+
+    for i in range(imgraw.shape[0]):
+        for j in range(imgraw.shape[1]):
+            if imgraw[i,j] > threshold:
+                imgraw[i,j] = 255
+                location.append((i,j))
+            else:
+                imgraw[i,j] = 0
+
+    a = np.array(location,dtype=np.uint16)
+    print("total number:",a.shape[0])
+    np.savetxt("坏点坐标.txt",a,fmt="%.1d")
+    img.imsave("二值化图片.bmp",imgraw,cmap="gray")
+
+
+
+
+
+    # mean_data = intensity_test(imgraw, int(block_x), int(block_y))
+    # df_meam = pd.DataFrame(mean_data)
+    # writer = pd.ExcelWriter('block_value.xlsx')  # 写入Excel文件
+    # df_meam.to_excel(writer, "mean", float_format='%.6f')  # ‘page_1’是写入excel的sheet名
+    # writer.save()
+    #return mean_data,R_data,B_data,Gr_data,Gb_data
+    return 0
+
+
+if __name__ == '__main__':
+    print("basicTest function test：")
+    filepath = r'./raw/blk.mipi_raw'
+    bayer_raw = rp.mipiRaw_2_Bayer(filepath, width="2592", height="1944")
+    # OB_shading_test(bayer_raw)
+    # GI_test(bayer_raw)
+    single_badpixel_test(bayer_raw)
+
 
 
 
