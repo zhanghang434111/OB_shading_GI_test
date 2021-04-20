@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 import rawProcess as rp
@@ -246,10 +247,6 @@ def single_badpixel_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
     np.savetxt("坏点坐标.txt",a,fmt="%.1d")
     img.imsave("二值化图片.bmp",imgraw,cmap="gray")
 
-
-
-
-
     # mean_data = intensity_test(imgraw, int(block_x), int(block_y))
     # df_meam = pd.DataFrame(mean_data)
     # writer = pd.ExcelWriter('block_value.xlsx')  # 写入Excel文件
@@ -259,10 +256,53 @@ def single_badpixel_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
     return 0
 
 
+# 闪点测试
+# 返回值：闪点数量，闪点坐标
+def flash_badpixel_test(rawpath,block_x="17",block_y="13",bayerpattern="R"):
+    #raw_name = rp.listdir(rawpath)
+
+    #filepath1 = r'./raw/5035_badpixel'
+    raw_list = rp.listdir(rawpath)
+    threshold = 256
+    if raw_list.dtype == 'uint8':
+        threshold = 64
+    location = []
+    bayer_raw_merge = []
+    print(len(raw_list))
+    for i in range(len(raw_list)):
+        print(i)
+        bayer_raw1 = rp.dothinRaw_2_Bayer(raw_list[i], width="1600", height="1200", raw_deepth="raw10")
+        # print(bayer_raw1)
+        bayer_raw_merge.append(bayer_raw1)
+        # bayer_raw_merge = np.array(bayer_raw_merge,bayer_raw1)
+    print(bayer_raw_merge)
+    k = np.asarray(bayer_raw_merge)
+    print(k)
+
+
+    for i in range(imgraw.shape[0]):
+        for j in range(imgraw.shape[1]):
+            if imgraw[i,j] > threshold:
+                imgraw[i,j] = 255
+                location.append((i,j))
+            else:
+                imgraw[i,j] = 0
+
+    a = np.array(location,dtype=np.uint16)
+    print("total number:",a.shape[0])
+    np.savetxt("坏点坐标.txt",a,fmt="%.1d")
+    img.imsave("二值化图片.bmp",imgraw,cmap="gray")
+
+    return 0
+
+
+
+
 if __name__ == '__main__':
     print("basicTest function test：")
-    filepath = r'./raw/blk.mipi_raw'
-    bayer_raw = rp.mipiRaw_2_Bayer(filepath, width="2592", height="1944")
+    filepath = r'./raw/5035_badpixel/1.raw'
+    #bayer_raw = rp.mipiRaw_2_Bayer(filepath, width="2592", height="1944")
+    bayer_raw = rp.dothinRaw_2_Bayer(filepath, width="2592", height="1944")
     # OB_shading_test(bayer_raw)
     # GI_test(bayer_raw)
     single_badpixel_test(bayer_raw)

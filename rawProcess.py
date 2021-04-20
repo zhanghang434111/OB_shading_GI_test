@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import os
 import matplotlib.image as img
@@ -6,10 +7,25 @@ from PIL import Image
 from skimage import img_as_ubyte
 import cv2
 
-# input
+
+# 获取当前路径下的所有文件名
+def listdir(path):
+    list_name = []
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)
+        if os.path.isdir(file_path):
+            listdir(file_path)
+        elif os.path.splitext(file_path)[1]=='.raw':
+            list_name.append(file_path)
+    print(list_name)
+    return list_name
+
+# get all raw image
 #
-def read_img():
-    filepath = "asd"
+def read_img(path):
+
+    raw_list = listdir(path)
+    print(raw_list)
 
     return 0
 
@@ -102,7 +118,7 @@ def bayerRaw2bmp(img_raw,bayerpattern = "R"):
 
 # mipi raw 转Bayer raw
 # 返回值：bayer raw image
-def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="big"):
+def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="little"):
     size = os.path.getsize(filepath)  # 获得文件大小
     img_wid = int(width)
     img_hei = int(height)
@@ -170,7 +186,7 @@ def mipiRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",b
 
 # dothin raw 转 Bayer raw
 # 返回值：bayer raw image
-def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="big"):
+def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10",byteorder="little"):
     size = os.path.getsize(filepath)  # 获得文件大小
     img_wid = int(width)
     img_hei = int(height)
@@ -183,7 +199,7 @@ def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10"
         a = np.fromfile(filepath,dtype='u2')   # u1 = uint8 ; u2 = uint16 ;
         print("raw file data:",a)
         k = np.array(a)
-        k = k.reshape(img_hei, img_wid)
+        k = k.reshape((img_hei, img_wid))
         print(k)
 
     # raw8
@@ -193,7 +209,7 @@ def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10"
         a = np.fromfile(filepath,dtype='u1')   # u1 = uint8 ; u2 = uint16 ;
         print("raw file data:", a)
         k = np.array(a)
-        k = k.reshape((img_hei, img_wid))
+        k = k.reshape(img_hei, img_wid)
 
     # raw12
     # 3个byte存储2个pixel
@@ -217,4 +233,27 @@ if __name__ == '__main__':
     plt.imshow(img_bmp)
     plt.show()
     #img.imsave("new.bmp", img_bmp)
+
+    filepath1 = r'./raw/5035_badpixel'
+    a = listdir(filepath1)
+    bayer_raw_merge = []
+    print(len(a))
+
+    for i in range(len(a)):
+        print(i)
+        bayer_raw1 = dothinRaw_2_Bayer(a[i],width="1600", height="1200",raw_deepth="raw10")
+        #print(bayer_raw1)
+        bayer_raw_merge.append(bayer_raw1)
+        #bayer_raw_merge = np.array(bayer_raw_merge,bayer_raw1)
+    print(bayer_raw_merge)
+    k = np.asarray(bayer_raw_merge)
+    print(k)
+
+
+    #img_bmp1 = bayerRaw2bmp(bayer_raw1, bayerpattern="R")
+    #img.imsave("new1.bmp",img_bmp1)
+    #plt.imshow(img_bmp1)
+    #plt.show()
+    #read_img(a)
+
 

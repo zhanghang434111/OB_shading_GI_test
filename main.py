@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import rawProcess as rp
 import basicTest as bt
 import numpy as np
