@@ -17,17 +17,21 @@ def listdir(path):
             listdir(file_path)
         elif os.path.splitext(file_path)[1]=='.raw':
             list_name.append(file_path)
-    print(list_name)
+    #print(list_name)
     return list_name
 
 # get all raw image
 #
 def read_img(path):
-
     raw_list = listdir(path)
-    print(raw_list)
-
-    return 0
+    bayer_raw_merge = []
+    print(len(raw_list))
+    for i in range(len(raw_list)):
+        #print(i)
+        bayer_raw1 = dothinRaw_2_Bayer(raw_list[i], width="1600", height="1200", raw_deepth="raw10")
+        bayer_raw_merge.append(bayer_raw1)
+    #k = np.asarray(bayer_raw_merge)
+    return np.asarray(bayer_raw_merge), raw_list
 
 
 # 用于将raw图 16位转位8位，保存为bmp用作预览
@@ -190,17 +194,17 @@ def dothinRaw_2_Bayer(filepath,width = "2592",height = "1944",raw_deepth="raw10"
     size = os.path.getsize(filepath)  # 获得文件大小
     img_wid = int(width)
     img_hei = int(height)
-    print(size)
+    #print(size)
 
     # raw10
     # 2个byte存储1个pixel
     # P1[9:2] --> P2[9:2] --> P3[9:2] --> P4[9:2]
     if (raw_deepth == 'raw10'):
         a = np.fromfile(filepath,dtype='u2')   # u1 = uint8 ; u2 = uint16 ;
-        print("raw file data:",a)
+        #print("raw file data:",a)
         k = np.array(a)
         k = k.reshape((img_hei, img_wid))
-        print(k)
+        #print(k)
 
     # raw8
     # 单字节对齐
