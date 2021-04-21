@@ -253,30 +253,38 @@ def single_badpixel_test(imgraw,block_x="17",block_y="13",bayerpattern="R"):
 # 闪点测试
 # 返回值：闪点数量，闪点坐标
 def flash_badpixel_test(rawpath,block_x="17",block_y="13",bayerpattern="R"):
-    threshold = 80
-    # if raw_list.dtype == 'uint8':
-    #     threshold = 64
-    get_multi_raw,raw_list = rp.read_img(rawpath)
+    threshold = 40
+    get_multi_raw, raw_list = rp.read_img(rawpath)
     print(get_multi_raw.shape)
-    multi_raw_merge = np.sum(get_multi_raw,axis=0) // len(raw_list)
+    # if get_multi_raw.dtype == 'uint8':
+    #     threshold = 5
     location = []
-    for i in range(multi_raw_merge.shape[0]):
-        for j in range(multi_raw_merge.shape[1]):
-            if multi_raw_merge[i,j] > threshold:
-                multi_raw_merge[i,j] = 255
-                location.append((i,j))
+    value = []
+    multi_raw_merge = np.sum(get_multi_raw, axis=0) // len(raw_list)
+    for x in range(get_multi_raw.shape[1]):
+        for y in range(get_multi_raw.shape[2]):
+            #print('坐标:',x,y)
+            #print(get_multi_raw[:,x,y])
+            sigma = np.var(get_multi_raw[:,x,y])
+            #print('方差：',fangcha)
+            if sigma > threshold:
+                multi_raw_merge[x,y] = 255
+                location.append((x,y))
+                value.append(get_multi_raw[:,x,y])
             else:
-                multi_raw_merge[i,j] = 0
+                multi_raw_merge[x, y] = 0
+    print(location)
+    print(value)
 
-    a = np.array(location,dtype=np.uint16)
-    print("total number:",a.shape[0])
+    flash_point_location = np.array(location,dtype=np.uint16)
+    #print(flash_point_location.shape)
+    flash_point_value = np.array(value, dtype=np.uint16)
+    #print("total number:",flash_point_location.shape[0])
     #np.savetxt("闪点坐标.txt",a,fmt="%.1d")
     with open('./闪点坐标.txt', 'w', encoding='utf-8') as f:
-        text1 = '闪点坐标：\n'
-        text2 = '闪点对应多帧pixel value：\n'
-        f.write(text1)
-        f.write(str(a)+'\n')
-        f.write(text2)
+        f.write('total number:'+str(flash_point_location.shape[0])+'\n')
+        for i in range(flash_point_location.shape[0]):
+            f.write('闪点坐标：'+str(flash_point_location[i,:]) + '，' +'闪点对应多帧pixel value：'+ str(flash_point_value[i,:]) + '\n')
 
     f.close()
     img.imsave("二值化图片.bmp",multi_raw_merge,cmap="gray")
